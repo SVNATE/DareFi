@@ -1,17 +1,18 @@
 /**
  * Create Username Screen
  */
-import React, {useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   View,
   Text,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import Svg, {Path} from 'react-native-svg';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import {debounce} from 'lodash';
@@ -29,7 +30,19 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'CreateUsername'>;
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 
+const SCREEN_COLORS = {
+  bgStart: '#0F1724',
+  bgEnd: '#2F2F3D',
+  neonLime: '#D9FF00',
+  neonCyan: '#21E8E4',
+  limeGlass: 'rgba(217,255,0,0.14)',
+  limeBorder: 'rgba(217,255,0,0.26)',
+};
+
 const CreateUsernameScreen = ({route}: Props): React.JSX.Element => {
+  const {height, width} = useWindowDimensions();
+  const isCompact = height < 760;
+
   const {walletAddress} = route.params;
   const {createUsername, isLoading} = useAuthStore();
 
@@ -38,6 +51,9 @@ const CreateUsernameScreen = ({route}: Props): React.JSX.Element => {
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState('');
 
+  const orbSizeA = Math.min(width * 0.68, 300);
+  const orbSizeB = Math.min(width * 0.9, 360);
+
   const validateLocal = (value: string): string => {
     if (value.length < 3) {return 'At least 3 characters';}
     if (value.length > 20) {return 'Max 20 characters';}
@@ -45,19 +61,28 @@ const CreateUsernameScreen = ({route}: Props): React.JSX.Element => {
     return '';
   };
 
-  // Debounced availability check
-  const checkAvailability = debounce(async (value: string) => {
-    if (validateLocal(value)) {return;}
-    setChecking(true);
-    try {
-      const available = await checkUsername(value);
-      setUsernameAvailable(available);
-    } catch {
-      setUsernameAvailable(null);
-    } finally {
-      setChecking(false);
-    }
-  }, 600);
+  const checkAvailability = useMemo(
+    () =>
+      debounce(async (value: string) => {
+        if (validateLocal(value)) {return;}
+        setChecking(true);
+        try {
+          const available = await checkUsername(value);
+          setUsernameAvailable(available);
+        } catch {
+          setUsernameAvailable(null);
+        } finally {
+          setChecking(false);
+        }
+      }, 600),
+    [],
+  );
+
+  useEffect(() => {
+    return () => {
+      checkAvailability.cancel();
+    };
+  }, [checkAvailability]);
 
   const handleChange = (value: string): void => {
     const cleaned = value.toLowerCase().replace(/[^a-z0-9_]/g, '');
@@ -100,35 +125,86 @@ const CreateUsernameScreen = ({route}: Props): React.JSX.Element => {
 
   return (
     <LinearGradient
-      colors={COLORS.gradientBackground}
+      colors={[SCREEN_COLORS.bgStart, SCREEN_COLORS.bgEnd]}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 1}}
       style={styles.container}>
+      <View
+        style={[
+          styles.orbA,
+          {
+            width: orbSizeA,
+            height: orbSizeA,
+            borderRadius: orbSizeA / 2,
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.orbB,
+          {
+            width: orbSizeB,
+            height: orbSizeB,
+            borderRadius: orbSizeB / 2,
+          },
+        ]}
+      />
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled">
+        <View
+          style={[
+            styles.frame,
+            {
+              paddingTop: Platform.OS === 'ios' ? SPACING['3xl'] : SPACING['2xl'],
+              paddingBottom: isCompact ? SPACING.base : SPACING.xl,
+              paddingHorizontal: isCompact ? SPACING.lg : SPACING.xl,
+            },
+          ]}>
+          <View style={[styles.header, isCompact && styles.headerCompact]}>
+            <LinearGradient
+              colors={[SCREEN_COLORS.neonLime, '#A1C700']}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 1}}
+              style={[styles.logoOuter, isCompact && styles.logoOuterCompact]}>
+              <View style={styles.logoInner}>
+                <Svg width={isCompact ? 34 : 40} height={isCompact ? 34 : 40} viewBox="0 0 40 40">
+                  <Path
+                    d="M10 5C10 5 25 5 30 15C35 25 25 35 15 35H10V5Z"
+                    stroke={SCREEN_COLORS.neonLime}
+                    strokeWidth={6}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M10 20H20"
+                    stroke={SCREEN_COLORS.neonLime}
+                    strokeWidth={4}
+                    strokeLinecap="round"
+                  />
+                </Svg>
+              </View>
+            </LinearGradient>
 
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.logoBox}>
-              <Text style={styles.logoEmoji}>👤</Text>
+            <View style={styles.brandRow}>
+              <Text style={[styles.brandPrimary, isCompact && styles.brandCompact]}>Dare</Text>
+              <Text style={[styles.brandAccent, isCompact && styles.brandCompact]}>Fi</Text>
             </View>
-            <Text style={styles.title}>Create Your Profile</Text>
-            <Text style={styles.subtitle}>
+
+            <Text style={[styles.title, isCompact && styles.titleCompact]}>Create Your Profile</Text>
+            <Text style={[styles.subtitle, isCompact && styles.subtitleCompact]}>
               One last step! Choose a unique username for your DareFi profile.
             </Text>
           </View>
 
-          {/* Wallet Info */}
-          <View style={styles.walletBadge}>
-            <Text style={styles.walletIcon}>🔗</Text>
-            <Text style={styles.walletAddress}>{shortenAddress(walletAddress)}</Text>
-            <View style={styles.connectedDot} />
-          </View>
+          <View style={[styles.mainCard, isCompact && styles.mainCardCompact]}>
+            <View style={styles.walletBadge}>
+              <Text style={styles.walletIcon}>🔗</Text>
+              <Text style={styles.walletAddress}>{shortenAddress(walletAddress)}</Text>
+              <View style={styles.connectedDot} />
+            </View>
 
-          {/* Username Input */}
-          <View style={styles.inputSection}>
             <Input
               label="Username"
               placeholder="e.g. cryptoathlete"
@@ -139,12 +215,14 @@ const CreateUsernameScreen = ({route}: Props): React.JSX.Element => {
               prefix="@"
               maxLength={20}
               error={error}
+              containerStyle={styles.inputContainer}
             />
+
             {hint && !error && (
-              <Text style={[styles.hint, {color: hintColor}]}>
+              <View style={styles.hintRow}>
                 {checking && <ActivityIndicator size="small" color={COLORS.textMuted} />}
-                {' '}{hint}
-              </Text>
+                <Text style={[styles.hint, {color: hintColor}]}>{hint}</Text>
+              </View>
             )}
 
             <View style={styles.rules}>
@@ -159,51 +237,119 @@ const CreateUsernameScreen = ({route}: Props): React.JSX.Element => {
                 </View>
               ))}
             </View>
+
+            <Button
+              title="Create Profile"
+              onPress={handleSubmit}
+              isLoading={isLoading}
+              disabled={!!error || !username || usernameAvailable === false}
+              fullWidth
+              size={isCompact ? 'md' : 'lg'}
+              style={styles.ctaButton}
+            />
           </View>
 
-          <Button
-            title="Create Profile"
-            onPress={handleSubmit}
-            isLoading={isLoading}
-            disabled={!!error || !username || usernameAvailable === false}
-            fullWidth
-            size="lg"
-          />
-        </ScrollView>
+          <View style={styles.footer}>
+            <View style={styles.footerDots}>
+              <View style={[styles.dot, styles.dotInactive]} />
+              <View style={[styles.dot, styles.dotActive]} />
+              <View style={[styles.dot, styles.dotInactive]} />
+            </View>
+            <Text style={styles.footerText}>Powered by Blockchain</Text>
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1},
-  flex: {flex: 1},
-  scroll: {
-    paddingHorizontal: SPACING.base,
-    paddingTop: SPACING['4xl'],
-    paddingBottom: SPACING['3xl'],
+  container: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  flex: {
+    flex: 1,
+  },
+  orbA: {
+    position: 'absolute',
+    right: -60,
+    top: -50,
+    backgroundColor: 'rgba(217,255,0,0.08)',
+  },
+  orbB: {
+    position: 'absolute',
+    left: -80,
+    bottom: -90,
+    backgroundColor: 'rgba(33,232,228,0.08)',
+  },
+  frame: {
+    flex: 1,
+    justifyContent: 'space-between',
   },
   header: {
     alignItems: 'center',
-    marginBottom: SPACING['2xl'],
   },
-  logoBox: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.cardElevated,
-    borderWidth: 2,
-    borderColor: COLORS.primary,
+  headerCompact: {
+    marginTop: 0,
+  },
+  logoOuter: {
+    width: 92,
+    height: 92,
+    borderRadius: 28,
+    padding: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.base,
+    shadowColor: SCREEN_COLORS.neonLime,
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.34,
+    shadowRadius: 24,
+    elevation: 14,
   },
-  logoEmoji: {fontSize: 40},
-  title: {
-    fontSize: FONT_SIZES['2xl'],
-    fontWeight: '800',
+  logoOuterCompact: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+  },
+  logoInner: {
+    flex: 1,
+    width: '100%',
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: SCREEN_COLORS.limeGlass,
+    borderWidth: 1,
+    borderColor: SCREEN_COLORS.limeBorder,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  brandPrimary: {
+    fontSize: FONT_SIZES['4xl'],
+    fontWeight: '900',
     color: COLORS.text,
+    letterSpacing: -1,
+  },
+  brandAccent: {
+    fontSize: FONT_SIZES['4xl'],
+    fontWeight: '900',
+    color: SCREEN_COLORS.neonLime,
+    letterSpacing: -1,
+  },
+  brandCompact: {
+    fontSize: FONT_SIZES['3xl'],
+  },
+  title: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: '800',
+    color: SCREEN_COLORS.neonLime,
     textAlign: 'center',
+    marginTop: SPACING.xs,
+  },
+  titleCompact: {
+    fontSize: FONT_SIZES.lg,
   },
   subtitle: {
     fontSize: FONT_SIZES.sm,
@@ -211,19 +357,36 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: SPACING.sm,
     lineHeight: 20,
+    paddingHorizontal: SPACING.lg,
+  },
+  subtitleCompact: {
+    fontSize: FONT_SIZES.xs,
+    lineHeight: 16,
+    marginTop: SPACING.xs,
+  },
+  mainCard: {
+    backgroundColor: 'rgba(26,26,40,0.72)',
+    borderRadius: RADIUS.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(33,232,228,0.2)',
+    paddingHorizontal: SPACING.base,
+    paddingVertical: SPACING.base,
+  },
+  mainCardCompact: {
+    paddingVertical: SPACING.md,
   },
   walletBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: 'rgba(47,47,61,0.75)',
     borderRadius: RADIUS.full,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: SPACING.base,
-    paddingVertical: SPACING.sm,
+    borderColor: 'rgba(33,232,228,0.25)',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 6,
     alignSelf: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.base,
     gap: SPACING.sm,
   },
   walletIcon: {fontSize: 16},
@@ -238,29 +401,70 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: COLORS.success,
   },
-  inputSection: {
-    marginBottom: SPACING.xl,
+  inputContainer: {
+    marginBottom: SPACING.xs,
+  },
+  hintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    marginBottom: SPACING.xs,
   },
   hint: {
     fontSize: FONT_SIZES.sm,
-    marginTop: -SPACING.sm,
-    marginBottom: SPACING.sm,
     fontWeight: '600',
   },
   rules: {
-    marginTop: SPACING.sm,
+    marginTop: SPACING.xs,
     gap: SPACING.xs,
   },
   ruleRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: SPACING.xs,
   },
-  ruleDot: {color: COLORS.textMuted, fontSize: FONT_SIZES.sm},
-  ruleText: {
+  ruleDot: {
+    color: COLORS.textMuted,
     fontSize: FONT_SIZES.sm,
+    lineHeight: 16,
+  },
+  ruleText: {
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textMuted,
     flex: 1,
+    lineHeight: 16,
+  },
+  ctaButton: {
+    marginTop: SPACING.md,
+  },
+  footer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: SPACING.xs,
+  },
+  footerDots: {
+    flexDirection: 'row',
+    gap: SPACING.xs,
+    marginBottom: SPACING.xs,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dotActive: {
+    backgroundColor: SCREEN_COLORS.neonLime,
+  },
+  dotInactive: {
+    backgroundColor: 'rgba(255,255,255,0.28)',
+  },
+  footerText: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textMuted,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    fontWeight: '600',
   },
 });
 

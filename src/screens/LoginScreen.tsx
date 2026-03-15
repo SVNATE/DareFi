@@ -6,11 +6,11 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
+  useWindowDimensions,
   Platform,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import Svg, {Path} from 'react-native-svg';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
@@ -18,14 +18,28 @@ import Toast from 'react-native-toast-message';
 import {useAuthStore} from '../store';
 import {AuthStackParamList} from '../types';
 import {COLORS} from '../constants/colors';
-import {FONT_SIZES, SPACING, RADIUS} from '../constants/theme';
+import {FONT_SIZES, SPACING} from '../constants/theme';
 import WalletConnectButton from '../components/wallet/WalletConnectButton';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
+const LOGIN_COLORS = {
+  bgStart: '#0F1724',
+  bgEnd: '#2F2F3D',
+  neonLime: '#D9FF00',
+  neonCyan: '#21E8E4',
+  limeGlass: 'rgba(217,255,0,0.14)',
+  limeBorder: 'rgba(217,255,0,0.26)',
+};
+
 const LoginScreen = (): React.JSX.Element => {
   const navigation = useNavigation<Nav>();
-  const {connectWallet, isLoading, walletAddress, error, clearError} = useAuthStore();
+  const {height, width} = useWindowDimensions();
+  const isCompact = height < 760;
+  const {connectWallet, isLoading, clearError} = useAuthStore();
+
+  const orbSizeA = Math.min(width * 0.7, 300);
+  const orbSizeB = Math.min(width * 0.9, 360);
 
   const handleConnectWallet = async (
     walletType: 'argentX' | 'braavos' | 'walletConnect',
@@ -44,187 +58,255 @@ const LoginScreen = (): React.JSX.Element => {
 
   return (
     <LinearGradient
-      colors={COLORS.gradientBackground}
+      colors={[LOGIN_COLORS.bgStart, LOGIN_COLORS.bgEnd]}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 1}}
       style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+      <View
+        style={[
+          styles.orbA,
+          {
+            width: orbSizeA,
+            height: orbSizeA,
+            borderRadius: orbSizeA / 2,
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.orbB,
+          {
+            width: orbSizeB,
+            height: orbSizeB,
+            borderRadius: orbSizeB / 2,
+          },
+        ]}
+      />
 
-          {/* Hero */}
-          <View style={styles.hero}>
-            <LinearGradient
-              colors={COLORS.gradientPrimary}
-              style={styles.logoBox}>
-              <Text style={styles.logoIcon}>⚡</Text>
-            </LinearGradient>
-            <Text style={styles.heroTitle}>DareFi</Text>
-            <Text style={styles.heroSubtitle}>
-              Create dares. Stake crypto.{'\n'}Win big. On Starknet.
+      <View
+        style={[
+          styles.frame,
+          {
+            paddingTop: Platform.OS === 'ios' ? SPACING['3xl'] : SPACING['2xl'],
+            paddingBottom: isCompact ? SPACING.base : SPACING.xl,
+            paddingHorizontal: isCompact ? SPACING.lg : SPACING.xl,
+          },
+        ]}>
+        <View style={[styles.hero, isCompact && styles.heroCompact]}>
+          <LinearGradient
+            colors={[LOGIN_COLORS.neonLime, '#A1C700']}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 1}}
+            style={[styles.logoOuter, isCompact && styles.logoOuterCompact]}>
+            <View style={styles.logoInner}>
+              <Svg width={isCompact ? 34 : 40} height={isCompact ? 34 : 40} viewBox="0 0 40 40">
+                <Path
+                  d="M10 5C10 5 25 5 30 15C35 25 25 35 15 35H10V5Z"
+                  stroke={LOGIN_COLORS.neonLime}
+                  strokeWidth={6}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <Path
+                  d="M10 20H20"
+                  stroke={LOGIN_COLORS.neonLime}
+                  strokeWidth={4}
+                  strokeLinecap="round"
+                />
+              </Svg>
+            </View>
+          </LinearGradient>
+
+          <View style={styles.brandRow}>
+            <Text style={[styles.brandPrimary, isCompact && styles.brandPrimaryCompact]}>Dare</Text>
+            <Text style={[styles.brandAccent, isCompact && styles.brandPrimaryCompact]}>Fi</Text>
+          </View>
+        </View>
+
+        <View style={[styles.main, isCompact && styles.mainCompact]}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, isCompact && styles.sectionTitleCompact]}>
+              Connect Your Wallet
+            </Text>
+            <Text style={[styles.sectionSubtitle, isCompact && styles.sectionSubtitleCompact]}>
+              Start betting on real world challenges.
             </Text>
           </View>
 
-          {/* Stats */}
-          <View style={styles.statsRow}>
-            {[
-              {label: 'Active Dares', value: '1.2K'},
-              {label: 'Total Pool', value: '$84K'},
-              {label: 'Winners', value: '930'},
-            ].map(s => (
-              <View key={s.label} style={styles.stat}>
-                <Text style={styles.statValue}>{s.value}</Text>
-                <Text style={styles.statLabel}>{s.label}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Wallet Options */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Connect Your Wallet</Text>
-            <Text style={styles.sectionSubtitle}>
-              Sign in securely with your Starknet wallet.{'\n'}No gas required for transactions.
-            </Text>
-
+          <View style={styles.walletList}>
             <WalletConnectButton
               walletType="argentX"
               onPress={() => handleConnectWallet('argentX')}
               isLoading={isLoading}
+              compact={isCompact}
             />
             <WalletConnectButton
               walletType="braavos"
               onPress={() => handleConnectWallet('braavos')}
               isLoading={isLoading}
+              compact={isCompact}
             />
             <WalletConnectButton
               walletType="walletConnect"
               onPress={() => handleConnectWallet('walletConnect')}
               isLoading={isLoading}
+              compact={isCompact}
             />
           </View>
+        </View>
 
-          {/* Features */}
-          <View style={styles.features}>
-            {[
-              {icon: '⛽', text: 'Gasless transactions via Starkzap'},
-              {icon: '🔒', text: 'Funds secured in smart contract escrow'},
-              {icon: '💰', text: 'Earn yield on locked funds'},
-            ].map(f => (
-              <View key={f.text} style={styles.featureRow}>
-                <Text style={styles.featureIcon}>{f.icon}</Text>
-                <Text style={styles.featureText}>{f.text}</Text>
-              </View>
-            ))}
+        <View style={styles.footer}>
+          <View style={styles.footerDots}>
+            <View style={[styles.dot, styles.dotInactive]} />
+            <View style={[styles.dot, styles.dotActive]} />
+            <View style={[styles.dot, styles.dotInactive]} />
           </View>
-
-          <Text style={styles.tos}>
-            By connecting you agree to our Terms of Service and Privacy Policy.
-          </Text>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <Text style={styles.footerText}>Powered by Blockchain</Text>
+        </View>
+      </View>
     </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1},
-  flex: {flex: 1},
-  scroll: {
-    paddingHorizontal: SPACING.base,
-    paddingTop: SPACING['4xl'],
-    paddingBottom: SPACING['3xl'],
+  container: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  orbA: {
+    position: 'absolute',
+    right: -60,
+    top: -50,
+    backgroundColor: 'rgba(217,255,0,0.08)',
+  },
+  orbB: {
+    position: 'absolute',
+    left: -80,
+    bottom: -90,
+    backgroundColor: 'rgba(33,232,228,0.08)',
+  },
+  frame: {
+    flex: 1,
+    justifyContent: 'space-between',
   },
   hero: {
     alignItems: 'center',
-    marginBottom: SPACING['2xl'],
+    marginTop: SPACING.sm,
   },
-  logoBox: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
+  heroCompact: {
+    marginTop: 0,
+  },
+  logoOuter: {
+    width: 96,
+    height: 96,
+    borderRadius: 30,
+    padding: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.md,
-    shadowColor: COLORS.primary,
+    marginBottom: SPACING.base,
+    shadowColor: LOGIN_COLORS.neonLime,
     shadowOffset: {width: 0, height: 8},
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 12,
+    shadowOpacity: 0.34,
+    shadowRadius: 24,
+    elevation: 14,
   },
-  logoIcon: {fontSize: 44},
-  heroTitle: {
+  logoOuterCompact: {
+    width: 82,
+    height: 82,
+    borderRadius: 26,
+  },
+  logoInner: {
+    flex: 1,
+    width: '100%',
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: LOGIN_COLORS.limeGlass,
+    borderWidth: 1,
+    borderColor: LOGIN_COLORS.limeBorder,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  brandPrimary: {
     fontSize: FONT_SIZES['4xl'],
     fontWeight: '900',
-    color: COLORS.text,
-    letterSpacing: -0.5,
+    color: '#FFFFFF',
+    letterSpacing: -1,
   },
-  heroSubtitle: {
+  brandAccent: {
+    fontSize: FONT_SIZES['4xl'],
+    fontWeight: '900',
+    color: LOGIN_COLORS.neonLime,
+    letterSpacing: -1,
+  },
+  brandPrimaryCompact: {
+    fontSize: FONT_SIZES['3xl'],
+  },
+  main: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  mainCompact: {
+    justifyContent: 'center',
+  },
+  sectionHeader: {
+    marginBottom: SPACING.lg,
+  },
+  sectionTitle: {
+    fontSize: FONT_SIZES['2xl'],
+    fontWeight: '800',
+    color: LOGIN_COLORS.neonLime,
+    marginBottom: SPACING.xs,
+    textAlign: 'center',
+  },
+  sectionTitleCompact: {
+    fontSize: FONT_SIZES.xl,
+  },
+  sectionSubtitle: {
     fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginTop: SPACING.sm,
-    lineHeight: 24,
+    lineHeight: 22,
+    paddingHorizontal: SPACING.xl,
   },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: COLORS.card,
-    borderRadius: RADIUS.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: SPACING.base,
-    marginBottom: SPACING.xl,
-  },
-  stat: {alignItems: 'center'},
-  statValue: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: '800',
-    color: COLORS.primaryLight,
-  },
-  statLabel: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textMuted,
-    marginTop: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  section: {
-    marginBottom: SPACING.xl,
-  },
-  sectionTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: '800',
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  sectionSubtitle: {
+  sectionSubtitleCompact: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textMuted,
-    marginBottom: SPACING.lg,
-    lineHeight: 20,
+    lineHeight: 19,
+    paddingHorizontal: SPACING.lg,
   },
-  features: {
+  walletList: {
     gap: SPACING.sm,
-    marginBottom: SPACING.xl,
   },
-  featureRow: {
-    flexDirection: 'row',
+  footer: {
     alignItems: 'center',
-    gap: SPACING.sm,
+    justifyContent: 'center',
+    paddingBottom: SPACING.sm,
   },
-  featureIcon: {fontSize: 18},
-  featureText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    flex: 1,
+  footerDots: {
+    flexDirection: 'row',
+    gap: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
-  tos: {
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dotActive: {
+    backgroundColor: LOGIN_COLORS.neonLime,
+  },
+  dotInactive: {
+    backgroundColor: 'rgba(255,255,255,0.28)',
+  },
+  footerText: {
     fontSize: FONT_SIZES.xs,
     color: COLORS.textMuted,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
     textAlign: 'center',
-    lineHeight: 18,
+    fontWeight: '600',
   },
 });
 

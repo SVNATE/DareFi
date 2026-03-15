@@ -93,13 +93,13 @@ const ProfileScreen = (): React.JSX.Element => {
           <Text style={styles.sectionTitle}>Wallet</Text>
           <View style={styles.balanceRow}>
             <Text style={styles.balanceLabel}>USDC Balance</Text>
-            <Text style={styles.balanceValue}>${balance?.usdc ?? '0.00'}</Text>
+            <Text style={styles.balanceValue}>${balance?.amount ?? '0.00'}</Text>
           </View>
-          {stakingPosition && parseFloat(stakingPosition.stakedAmount) > 0 && (
+          {stakingPosition && parseFloat(stakingPosition.amount) > 0 && (
             <View style={styles.balanceRow}>
               <Text style={styles.balanceLabel}>Staked (Yield)</Text>
               <View style={styles.balanceRight}>
-                <Text style={styles.balanceValue}>${stakingPosition.stakedAmount}</Text>
+                <Text style={styles.balanceValue}>${stakingPosition.amount}</Text>
                 <Text style={styles.yieldBadge}>+{stakingPosition.apy}% APY</Text>
               </View>
             </View>
@@ -111,10 +111,10 @@ const ProfileScreen = (): React.JSX.Element => {
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>Recent Activity</Text>
             {transactions.slice(0, 5).map(tx => (
-              <View key={tx.id} style={styles.txRow}>
+              <View key={tx.hash} style={styles.txRow}>
                 <View style={styles.txLeft}>
                   <Text style={styles.txIcon}>
-                    {tx.type === 'deposit' ? '⬇️' : tx.type === 'withdrawal' ? '⬆️' : tx.type === 'win' ? '🏆' : tx.type === 'stake' ? '🔒' : '💸'}
+                    {tx.type === 'receiveReward' ? '🏆' : tx.type === 'withdraw' ? '⬆️' : tx.type === 'joinBet' ? '🎯' : tx.type === 'createDare' ? '🔥' : '📋'}
                   </Text>
                   <View>
                     <Text style={styles.txType}>{tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}</Text>
@@ -123,9 +123,9 @@ const ProfileScreen = (): React.JSX.Element => {
                 </View>
                 <Text style={[
                   styles.txAmount,
-                  {color: ['win', 'deposit'].includes(tx.type) ? COLORS.success : COLORS.danger},
+                  {color: tx.type === 'receiveReward' ? COLORS.success : COLORS.danger},
                 ]}>
-                  {['win', 'deposit'].includes(tx.type) ? '+' : '-'}${tx.amount}
+                  {tx.type === 'receiveReward' ? '+' : '-'}${tx.amount}
                 </Text>
               </View>
             ))}
