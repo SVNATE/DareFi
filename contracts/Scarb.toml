@@ -1,0 +1,15 @@
+// DareFi — Scarb.toml
+// Build with: scarb build
+// Deploy with: starkli deploy
+
+[package]
+name = "dare_fi"
+version = "0.1.0"
+edition = "2023_11"
+
+[[target.starknet-contract]]
+casm = true
+
+[dependencies]
+starknet = ">=2.6.0"
+openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.9.0" }

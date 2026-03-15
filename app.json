@@ -1,0 +1,12 @@
+{
+  "name": "DareFi",
+  "displayName": "DareFi",
+  "version": "1",
+  "versionCode": 1,
+  "android": {
+    "package": "com.darefi"
+  },
+  "ios": {
+    "bundleIdentifier": "com.darefi.app"
+  }
+}
