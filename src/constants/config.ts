@@ -1,3 +1,6 @@
+const ENV = (globalThis as {process?: {env?: Record<string, string | undefined>}})
+  .process?.env ?? {};
+
 // Starknet / Starkzap Configuration
 export const STARKNET_CONFIG = {
   network: 'mainnet', // or 'sepolia' for testnet
@@ -13,10 +16,17 @@ export const CONTRACT_ADDRESSES = {
 };
 
 export const STARKZAP_CONFIG = {
-  apiKey: process.env.STARKZAP_API_KEY ?? '',
+  apiKey: ENV.STARKZAP_API_KEY ?? '',
   paymasterUrl: 'https://paymaster.starkzap.io/v1',
   stakingUrl: 'https://staking.starkzap.io/v1',
 };
+
+/**
+ * WalletConnect Project ID
+ * Create a project at https://cloud.reown.com and add the ID to your .env:
+ *   WALLETCONNECT_PROJECT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ */
+export const WALLETCONNECT_PROJECT_ID: string = ENV.WALLETCONNECT_PROJECT_ID ?? '';
 
 export const APP_CONFIG = {
   minStakeUSDC: 1,      // $1 minimum stake

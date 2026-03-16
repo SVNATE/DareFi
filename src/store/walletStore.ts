@@ -43,7 +43,7 @@ export const useWalletStore = create<WalletState>((set) => ({
     set({isLoadingTx: true});
     try {
       // Use mock data; replace with: await ApiService.getTransactionHistory(walletAddress)
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 500));
       set({transactions: MOCK_TRANSACTIONS, isLoadingTx: false});
     } catch {
       set({isLoadingTx: false});

@@ -41,7 +41,14 @@ apiClient.interceptors.request.use(config => {
 apiClient.interceptors.response.use(
   response => response,
   error => {
-    const msg = error?.response?.data?.message ?? error.message ?? 'Network error';
+    // No response means the server is unreachable (no internet or backend not running)
+    if (!error.response) {
+      throw new Error(
+        `Cannot reach the DareFi server.\n` +
+        `Check your internet connection or make sure the backend is deployed at:\n${API_BASE_URL}`,
+      );
+    }
+    const msg = error?.response?.data?.message ?? error.message ?? 'Request failed';
     throw new Error(msg);
   },
 );

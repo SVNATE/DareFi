@@ -52,7 +52,14 @@ const LoginScreen = (): React.JSX.Element => {
     if (state.walletAddress && !state.isAuthenticated) {
       navigation.navigate('CreateUsername', {walletAddress: state.walletAddress});
     } else if (state.error) {
-      Toast.show({type: 'error', text1: 'Connection Failed', text2: state.error});
+      // Show only the first line in the primary slot; detail goes to text2
+      const lines = state.error.split('\n').map(l => l.trim()).filter(Boolean);
+      Toast.show({
+        type: 'error',
+        text1: lines[0] ?? 'Connection Failed',
+        text2: lines.slice(1).join(' ') || undefined,
+        visibilityTime: 5000,
+      });
     }
   };
 

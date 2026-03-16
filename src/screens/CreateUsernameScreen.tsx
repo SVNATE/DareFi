@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   useWindowDimensions,
+  TouchableOpacity,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Svg, {Path} from 'react-native-svg';
@@ -21,7 +22,6 @@ import {useAuthStore} from '../store';
 import {AuthStackParamList} from '../types';
 import {COLORS} from '../constants/colors';
 import {FONT_SIZES, SPACING, RADIUS} from '../constants/theme';
-import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import {checkUsername} from '../services/api';
 import {shortenAddress} from '../services/starknet';
@@ -122,6 +122,8 @@ const CreateUsernameScreen = ({route}: Props): React.JSX.Element => {
       : usernameAvailable === true
       ? COLORS.success
       : COLORS.danger;
+
+  const canSubmit = !checking && !isLoading && !error && !!username && usernameAvailable !== false;
 
   return (
     <LinearGradient
@@ -238,15 +240,29 @@ const CreateUsernameScreen = ({route}: Props): React.JSX.Element => {
               ))}
             </View>
 
-            <Button
-              title="Create Profile"
+            <TouchableOpacity
               onPress={handleSubmit}
-              isLoading={isLoading}
-              disabled={!!error || !username || usernameAvailable === false}
-              fullWidth
-              size={isCompact ? 'md' : 'lg'}
-              style={styles.ctaButton}
-            />
+              activeOpacity={0.9}
+              disabled={!canSubmit}
+              style={styles.ctaTouch}>
+              <LinearGradient
+                colors={
+                  canSubmit
+                    ? [SCREEN_COLORS.neonLime, '#A1C700']
+                    : ['rgba(68,72,110,0.9)', 'rgba(58,60,92,0.9)']
+                }
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 0}}
+                style={[styles.ctaButton, isCompact && styles.ctaButtonCompact]}>
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#1A1B28" />
+                ) : (
+                  <Text style={[styles.ctaText, !canSubmit && styles.ctaTextDisabled]}>
+                    Create Profile
+                  </Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.footer}>
@@ -371,6 +387,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(33,232,228,0.2)',
     paddingHorizontal: SPACING.base,
     paddingVertical: SPACING.base,
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
   mainCardCompact: {
     paddingVertical: SPACING.md,
@@ -417,6 +436,7 @@ const styles = StyleSheet.create({
   rules: {
     marginTop: SPACING.xs,
     gap: SPACING.xs,
+    paddingHorizontal: 2,
   },
   ruleRow: {
     flexDirection: 'row',
@@ -436,6 +456,33 @@ const styles = StyleSheet.create({
   },
   ctaButton: {
     marginTop: SPACING.md,
+    minHeight: 56,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: SCREEN_COLORS.neonLime,
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.25,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  ctaTouch: {
+    marginTop: SPACING.md,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  ctaButtonCompact: {
+    minHeight: 50,
+    borderRadius: 18,
+  },
+  ctaText: {
+    fontSize: FONT_SIZES['2xl'],
+    fontWeight: '900',
+    color: '#101520',
+    letterSpacing: 0.2,
+  },
+  ctaTextDisabled: {
+    color: 'rgba(224,229,244,0.88)',
   },
   footer: {
     alignItems: 'center',

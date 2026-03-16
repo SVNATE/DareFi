@@ -51,22 +51,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const message = `DareFi login: ${Date.now()}`;
       const signature = await StarkzapService.signMessage(session.address, message);
 
-      // 3. Authenticate with backend (or create new user)
-      let authResult: {user: User; token: string} | null = null;
+      // 3. Authenticate with backend
+      let authResult: {user: User; token: string};
       try {
         authResult = await ApiService.loginWithWallet(session.address, signature);
-      } catch {
-        // New user – wallet not registered yet, need username setup
-        await AsyncStorage.setItem(STORAGE_KEYS.walletAddress, session.address);
-        await AsyncStorage.setItem(STORAGE_KEYS.walletType, walletType);
+      } catch (error: any) {
+        // New wallet not registered yet -> continue to username onboarding.
+        if (_isWalletNotRegisteredError(error)) {
+          await AsyncStorage.setItem(STORAGE_KEYS.walletAddress, session.address);
+          await AsyncStorage.setItem(STORAGE_KEYS.walletType, walletType);
 
-        set({
-          walletAddress: session.address,
-          walletType,
-          isLoading: false,
-          isAuthenticated: false, // still needs username
-        });
-        return;
+          set({
+            walletAddress: session.address,
+            walletType,
+            isLoading: false,
+            isAuthenticated: false,
+            error: null,
+          });
+          return;
+        }
+
+        throw error;
       }
 
       setAuthToken(authResult.token);
@@ -97,6 +102,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({isLoading: true, error: null});
     try {
       const result = await ApiService.createUser(walletAddress, username);
+
       setAuthToken(result.token);
       await _persistSession(walletAddress, walletType!, result.token, result.user);
 
@@ -175,4 +181,19 @@ async function _persistSession(
     [STORAGE_KEYS.authToken, token],
     [STORAGE_KEYS.user, JSON.stringify(user)],
   ]);
+}
+
+function _isWalletNotRegisteredError(error: any): boolean {
+  const status = error?.status ?? error?.response?.status;
+  if (status === 404) {
+    return true;
+  }
+
+  const message = String(error?.message ?? '').toLowerCase();
+  return (
+    message.includes('not found')
+    || message.includes('not registered')
+    || message.includes('user does not exist')
+    || message.includes('wallet does not exist')
+  );
 }
